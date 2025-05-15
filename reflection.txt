@@ -1,0 +1,129 @@
+# Assignment 6 reflection
+
+## Submitter metadata
+
+Partner 1: Alan Wu (ayw34)
+Partner 2: Francisco Herrera Leon (fjh42)
+
+Hours spent working on this assignment: 18.0
+
+## Verification questions
+
+Play a game of PacMann (on the default 10 x 10 board) by running "GraphicalApp.java".
+If you completed the assignment with a partner, both partners should independently 
+play the game and report on the following items:
+
+
+1. How many pellets (i.e., the big circles) did PacMann eat?
+
+   Answer: 4 ; 4
+
+2. During each of the FLEE sequences, how many ghosts did PacMann eat?
+
+   Answer: {1,1,2,3}
+   {0,3,2,2}
+
+3. What was your final score?
+
+   Answer: 5140; 6160
+
+## Reflection questions
+
+1. For TODO 1, briefly explain how you constructed your graph. Did you discover
+   the maze via a BFS/DFS search, or did you iterate directly over the tile grid
+   to locate edges? Why did you choose this approach?
+   
+   Answer:
+   We discovered the maze via BFS search, because the tile (2,2) is always a PATH, and all the path tiles
+   are reachable from any path tile (they are interconnected). These conditions guarantee that we can find all the
+   PATH tiles via a BFS search from (2,2).
+   Additionally, we thought that it would be more efficient than checking all the tiles in the tile grid for larger
+   graphs.
+
+
+2. In the original Pac-Man game, a piece of fruit appeared at a predetermined 
+   position on the board once Pac-Man had eaten 70 dots and remained on the screen 
+   for 9 seconds. Eating this fruit awarded the player a score bonus. Describe how 
+   you could add this feature to your PacMann game. Which files, fields, or methods 
+   would you need to edit / add? 
+
+   Answer:
+   We should modify
+
+
+   model.GameModel.java
+   modify:
+   public enum Item {DOT, PELLET, NONE}
+   to:
+   public enum Item {DOT, PELLET, NONE, FRUIT}
+
+   modify:
+   public void processPacMannArrival() {
+       MazeVertex v = pacMann().nearestVertex();
+       if(items.containsKey(v)) {
+           Item item = items.remove(v);
+           // Remove and get the item at vertex `v` if any
+
+           switch (item) {
+               case DOT:
+                   addToScore(10);
+                   break;
+               case PELLET:
+                   addToScore(50);
+                   startFlee();
+                   break;
+           }
+   }
+   Edit:
+   When Pac-Mann "eats" (when Pac-Mann goes over a vertex with a fruit item in its position) a fruit,
+   then 70 points should be added to the score.
+
+   -----------------------------------------------------------------
+   ui.GameBoard.java
+   modify:
+   void paintVertex(MazeVertex v, Graphics2D g2) {
+       g2.setColor(Color.WHITE);
+       switch (model.itemAt(v)) {
+           case Item.DOT ->
+                   g2.fill(new Ellipse2D.Double(v.loc().i() + 0.35, v.loc().j() + 0.35, 0.3, 0.3));
+           case Item.PELLET ->
+                   g2.fill(new Ellipse2D.Double(v.loc().i() + 0.15, v.loc().j() + 0.15, 0.7, 0.7));
+       }
+   }
+   Edit:
+   When the item at vertex v is a FRUIT, that it paints a fruit for 9 seconds in that location.
+   The fruit can be either a combination of shapes, or an image.
+
+
+
+   private void placeDotsAndPellets() {
+       // build set of pellet locations
+       HashSet<IPair> pelletLocs = new HashSet<>();
+       for (int i = 5; i < width / 2 - 7; i += 15) {
+           for (int j = 5; j < height / 2 - 7; j += 15) {
+               pelletLocs.add(new IPair(i, j));
+               pelletLocs.add(new IPair(width - 1 - i, j));
+               pelletLocs.add(new IPair(i, height - 1 - j));
+               pelletLocs.add(new IPair(width - 1 - i, height - 1 - j));
+           }
+       }
+
+       for (MazeVertex v : graph.vertices()) {
+           if (pelletLocs.contains(v.loc())) {
+               items.put(v, Item.PELLET);
+               continue;
+           }
+
+           int i = v.loc().i();
+           int j = v.loc().j();
+
+           // place pellets at all interior vertices
+           if (i >= 2 && i < width - 2 && j >= 2 && j < height - 2) {
+               items.put(v, Item.DOT);
+           }
+       }
+
+   }
+   Edit/add:
+   We would likely implement a new method that temporarily places a fruit in a random location for 9 seconds.
+   It would replace the item initially placed in this location, and if it's NONE, then just add the fruit.
